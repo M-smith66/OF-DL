@@ -1,8 +1,9 @@
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using static OF_DL.Entities.Messages.Messages;
 
@@ -25,13 +26,13 @@ public class Post
 
     public class Dash
     {
-        [JsonProperty("CloudFront-Policy")]
+        [JsonPropertyName("CloudFront-Policy")]
         public string CloudFrontPolicy { get; set; }
 
-        [JsonProperty("CloudFront-Signature")]
+        [JsonPropertyName("CloudFront-Signature")]
         public string CloudFrontSignature { get; set; }
 
-        [JsonProperty("CloudFront-Key-Pair-Id")]
+        [JsonPropertyName("CloudFront-Key-Pair-Id")]
         public string CloudFrontKeyPairId { get; set; }
     }
 
@@ -49,13 +50,13 @@ public class Post
 
     public class Hls
     {
-        [JsonProperty("CloudFront-Policy")]
+        [JsonPropertyName("CloudFront-Policy")]
         public string CloudFrontPolicy { get; set; }
 
-        [JsonProperty("CloudFront-Signature")]
+        [JsonPropertyName("CloudFront-Signature")]
         public string CloudFrontSignature { get; set; }
 
-        [JsonProperty("CloudFront-Key-Pair-Id")]
+        [JsonPropertyName("CloudFront-Key-Pair-Id")]
         public string CloudFrontKeyPairId { get; set; }
     }
 
@@ -158,10 +159,10 @@ public class Post
 
     public class VideoSources
     {
-        [JsonProperty("720")]
+        [JsonPropertyName("720")]
         public object _720 { get; set; }
 
-        [JsonProperty("240")]
+        [JsonPropertyName("240")]
         public object _240 { get; set; }
     }
 #pragma warning restore IDE1006 // Naming Styles

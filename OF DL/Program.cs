@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using OF_DL.Entities;
 using OF_DL.Entities.Archived;
 using OF_DL.Entities.Messages;
@@ -7,6 +6,7 @@ using OF_DL.Entities.Purchased;
 using OF_DL.Enumurations;
 using OF_DL.Helpers;
 using Spectre.Console;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace OF_DL;
@@ -40,7 +40,7 @@ public class Program
             if (File.Exists("auth.json"))
             {
                 AnsiConsole.Markup("[green]auth.json located successfully!\n[/]");
-                Auth = JsonConvert.DeserializeObject<Auth>(File.ReadAllText("auth.json"));
+                Auth = JsonSerializer.Deserialize<Auth>(File.ReadAllText("auth.json"));
             }
             else
             {
@@ -52,7 +52,7 @@ public class Program
             if (File.Exists("config.json"))
             {
                 AnsiConsole.Markup("[green]config.json located successfully!\n[/]");
-                Config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
+                Config = JsonSerializer.Deserialize<Config>(File.ReadAllText("config.json"));
             }
             else
             {
@@ -1095,15 +1095,18 @@ public class Program
                             DownloadOnlySpecificDates = configOptions.Contains("[red]DownloadPostsBeforeOrAfterSpecificDate[/]")
                         };
 
-
-                        string newConfigString = JsonConvert.SerializeObject(newConfig, Formatting.Indented);
+                        var format_options = new JsonSerializerOptions
+                        {
+                            WriteIndented = true
+                        };
+                        string newConfigString = JsonSerializer.Serialize(newConfig, format_options);
                         File.WriteAllText("config.json", newConfigString);
                         if (Config.IncludeExpiredSubscriptions != Config.IncludeExpiredSubscriptions)
                         {
-                            Config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
+                            Config = JsonSerializer.Deserialize<Config>(File.ReadAllText("config.json"));
                             return new KeyValuePair<bool, Dictionary<string, int>>(true, new Dictionary<string, int> { { "ConfigChanged", 0 } });
                         }
-                        Config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
+                        Config = JsonSerializer.Deserialize<Config>(File.ReadAllText("config.json"));
                         break;
                     }
                     break;

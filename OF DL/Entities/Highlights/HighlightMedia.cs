@@ -1,8 +1,9 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace OF_DL.Entities.Highlights
@@ -57,10 +58,10 @@ namespace OF_DL.Entities.Highlights
 
 		public class Sources
 		{
-			[JsonProperty("720")]
+			[JsonPropertyName("720")]
 			public string _720 { get; set; }
 
-			[JsonProperty("240")]
+			[JsonPropertyName("240")]
 			public string _240 { get; set; }
 			public string w150 { get; set; }
 			public string w480 { get; set; }

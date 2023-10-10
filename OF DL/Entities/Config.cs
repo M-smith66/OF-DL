@@ -1,10 +1,10 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using OF_DL.Enumerations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace OF_DL.Entities
@@ -42,7 +42,7 @@ namespace OF_DL.Entities
         public bool DownloadOnlySpecificDates { get; set; } = false;
 
         // This enum will define if we want data from before or after the CustomDate.
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public DownloadDateSelection DownloadDateSelection { get; set; } = DownloadDateSelection.before;
         // This is the specific date used in combination with the above enum.
 
