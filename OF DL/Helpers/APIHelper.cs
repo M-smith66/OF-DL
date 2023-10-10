@@ -1,5 +1,4 @@
 using HtmlAgilityPack;
-using Newtonsoft.Json;
 using OF_DL.Entities;
 using OF_DL.Entities.Archived;
 using OF_DL.Entities.Highlights;
@@ -12,6 +11,7 @@ using OF_DL.Enumurations;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Xml.Linq;
 using WidevineClient.Widevine;
 using static WidevineClient.HttpUtil;
@@ -20,13 +20,15 @@ namespace OF_DL.Helpers;
 
 public class APIHelper : IAPIHelper
 {
-    private static readonly JsonSerializerSettings m_JsonSerializerSettings;
+    private static readonly JsonSerializerOptions m_JsonSerializerSettings;
     private static readonly IDBHelper m_DBHelper;
     static APIHelper()
     {
-        m_JsonSerializerSettings = new()
+        m_JsonSerializerSettings = new JsonSerializerOptions
         {
-            MissingMemberHandling = MissingMemberHandling.Ignore
+            // This makes deserialization case-insensitive like the Newtonsoft.Json default.
+            // System.Text.Json already ignores additional members by default
+            PropertyNameCaseInsensitive = true
         };
         m_DBHelper = new DBHelper();
     }
@@ -46,7 +48,7 @@ public class APIHelper : IAPIHelper
         {
             vresponse.EnsureSuccessStatusCode();
             var body = await vresponse.Content.ReadAsStringAsync();
-            root = JsonConvert.DeserializeObject<DynamicRules>(body);
+            root = JsonSerializer.Deserialize<DynamicRules>(body);
         }
 
         long timestamp = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -201,7 +203,7 @@ public class APIHelper : IAPIHelper
 
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadAsStringAsync();
-            user = JsonConvert.DeserializeObject<Entities.User>(body, m_JsonSerializerSettings);
+            user = JsonSerializer.Deserialize<Entities.User>(body, m_JsonSerializerSettings);
             return user;
         }
         catch (Exception ex)
@@ -227,7 +229,7 @@ public class APIHelper : IAPIHelper
 
             string? body = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, new HttpClient());
 
-            subscriptions = JsonConvert.DeserializeObject<Subscriptions>(body);
+            subscriptions = JsonSerializer.Deserialize<Subscriptions>(body);
             if (subscriptions != null && subscriptions.hasMore)
             {
                 getParams["offset"] = subscriptions.list.Count.ToString();
@@ -239,7 +241,7 @@ public class APIHelper : IAPIHelper
 
                     if (!string.IsNullOrEmpty(loopbody) && loopbody.Trim() != "[]")
                     {
-                        newSubscriptions = JsonConvert.DeserializeObject<Subscriptions>(loopbody, m_JsonSerializerSettings);
+                        newSubscriptions = JsonSerializer.Deserialize<Subscriptions>(loopbody, m_JsonSerializerSettings);
                     }
                     else
                     {
@@ -330,7 +332,7 @@ public class APIHelper : IAPIHelper
                     break;
                 }
 
-                UserList userList = JsonConvert.DeserializeObject<UserList>(body);
+                UserList userList = JsonSerializer.Deserialize<UserList>(body);
                 if (userList == null)
                 {
                     break;
@@ -391,7 +393,7 @@ public class APIHelper : IAPIHelper
                     break;
                 }
 
-                List<UsersList>? usersList = JsonConvert.DeserializeObject<List<UsersList>>(body);
+                List<UsersList>? usersList = JsonSerializer.Deserialize<List<UsersList>>(body);
 
                 if (usersList == null || usersList.Count <= 0)
                 {
@@ -547,7 +549,7 @@ public class APIHelper : IAPIHelper
 
             if (isPaidPosts)
             {                   
-                paidposts = JsonConvert.DeserializeObject<Purchased>(body, m_JsonSerializerSettings);
+                paidposts = JsonSerializer.Deserialize<Purchased>(body, m_JsonSerializerSettings);
                 if (paidposts != null && paidposts.hasMore)
                 {
                     getParams["offset"] = paidposts.list.Count.ToString();
@@ -555,7 +557,7 @@ public class APIHelper : IAPIHelper
                     {
                         Purchased newPaidPosts = new();
                         var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                        newPaidPosts = JsonConvert.DeserializeObject<Purchased>(loopbody, m_JsonSerializerSettings);
+                        newPaidPosts = JsonSerializer.Deserialize<Purchased>(loopbody, m_JsonSerializerSettings);
 
                         paidposts.list.AddRange(newPaidPosts.list);
                         if (!newPaidPosts.hasMore)
@@ -665,7 +667,7 @@ public class APIHelper : IAPIHelper
             else if (isPosts)
             {
                     
-                posts = JsonConvert.DeserializeObject<Post>(body, m_JsonSerializerSettings);
+                posts = JsonSerializer.Deserialize<Post>(body, m_JsonSerializerSettings);
                 if (posts != null && posts.hasMore)
                 {
                     UpdateGetParamsForDateSelection(
@@ -676,7 +678,7 @@ public class APIHelper : IAPIHelper
                     {
                         Post newposts = new();
                         var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                        newposts = JsonConvert.DeserializeObject<Post>(loopbody, m_JsonSerializerSettings);
+                        newposts = JsonSerializer.Deserialize<Post>(loopbody, m_JsonSerializerSettings);
 
                         posts.list.AddRange(newposts.list);
                         if (!newposts.hasMore)
@@ -758,7 +760,7 @@ public class APIHelper : IAPIHelper
             else if (isArchived)
             {
                     
-                archived = JsonConvert.DeserializeObject<Archived>(body, m_JsonSerializerSettings);
+                archived = JsonSerializer.Deserialize<Archived>(body, m_JsonSerializerSettings);
                 if (archived != null && archived.hasMore)
                 {
                     UpdateGetParamsForDateSelection(
@@ -770,7 +772,7 @@ public class APIHelper : IAPIHelper
                         Archived newarchived = new();
 
                         var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                        newarchived = JsonConvert.DeserializeObject<Archived>(loopbody, m_JsonSerializerSettings);
+                        newarchived = JsonSerializer.Deserialize<Archived>(loopbody, m_JsonSerializerSettings);
 
                         archived.list.AddRange(newarchived.list);
                         if (!newarchived.hasMore)
@@ -835,7 +837,7 @@ public class APIHelper : IAPIHelper
             }
             else if (isStories)
             {
-                stories = JsonConvert.DeserializeObject<List<Stories>>(body, m_JsonSerializerSettings);
+                stories = JsonSerializer.Deserialize<List<Stories>>(body, m_JsonSerializerSettings);
                 stories = stories.OrderByDescending(x => x.createdAt).ToList();
                     
                 foreach (Stories story in stories)
@@ -883,7 +885,7 @@ public class APIHelper : IAPIHelper
             else if (isHighlights)
             {
                 List<string> highlight_ids = new();
-                highlights = JsonConvert.DeserializeObject<Highlights>(body, m_JsonSerializerSettings);
+                highlights = JsonSerializer.Deserialize<Highlights>(body, m_JsonSerializerSettings);
                     
                 if (highlights.hasMore)
                 {
@@ -894,7 +896,7 @@ public class APIHelper : IAPIHelper
                         Highlights newhighlights = new();
 
                         var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                        newhighlights = JsonConvert.DeserializeObject<Highlights>(loopbody, m_JsonSerializerSettings);
+                        newhighlights = JsonSerializer.Deserialize<Highlights>(loopbody, m_JsonSerializerSettings);
 
                         highlights.list.AddRange(newhighlights.list);
                         if (!newhighlights.hasMore)
@@ -930,7 +932,7 @@ public class APIHelper : IAPIHelper
                     using var highlightResponse = await highlight_client.SendAsync(highlight_request);
                     highlightResponse.EnsureSuccessStatusCode();
                     var highlightBody = await highlightResponse.Content.ReadAsStringAsync();
-                    highlightMedia = JsonConvert.DeserializeObject<HighlightMedia>(highlightBody, m_JsonSerializerSettings);
+                    highlightMedia = JsonSerializer.Deserialize<HighlightMedia>(highlightBody, m_JsonSerializerSettings);
                     if (highlightMedia != null)
                     {
                         foreach (HighlightMedia.Story item in highlightMedia.stories)
@@ -969,7 +971,7 @@ public class APIHelper : IAPIHelper
             }
             else if (isMessages)
             {
-                messages = JsonConvert.DeserializeObject<Messages>(body, m_JsonSerializerSettings);
+                messages = JsonSerializer.Deserialize<Messages>(body, m_JsonSerializerSettings);
                     
                 if (messages.hasMore)
                 {
@@ -979,7 +981,7 @@ public class APIHelper : IAPIHelper
                         Messages newmessages = new();
 
                         var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                        newmessages = JsonConvert.DeserializeObject<Messages>(loopbody, m_JsonSerializerSettings);
+                        newmessages = JsonSerializer.Deserialize<Messages>(loopbody, m_JsonSerializerSettings);
 
                         messages.list.AddRange(newmessages.list);
                         if (!newmessages.hasMore)
@@ -1063,7 +1065,7 @@ public class APIHelper : IAPIHelper
             }
             else if (isPurchased)
             {
-                paidMessages = JsonConvert.DeserializeObject<Purchased>(body, m_JsonSerializerSettings);
+                paidMessages = JsonSerializer.Deserialize<Purchased>(body, m_JsonSerializerSettings);
                     
                 if (paidMessages != null && paidMessages.hasMore)
                 {
@@ -1073,7 +1075,7 @@ public class APIHelper : IAPIHelper
                         Purchased newpaidMessages = new();
 
                         var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                        newpaidMessages = JsonConvert.DeserializeObject<Purchased>(loopbody, m_JsonSerializerSettings);
+                        newpaidMessages = JsonSerializer.Deserialize<Purchased>(loopbody, m_JsonSerializerSettings);
 
                         paidMessages.list.AddRange(newpaidMessages.list);
                         if (!newpaidMessages.hasMore)
@@ -1261,7 +1263,7 @@ public class APIHelper : IAPIHelper
             };
 
             var body = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-            paidPosts = JsonConvert.DeserializeObject<Purchased>(body, m_JsonSerializerSettings);
+            paidPosts = JsonSerializer.Deserialize<Purchased>(body, m_JsonSerializerSettings);
             if (paidPosts != null && paidPosts.hasMore)
             {
                 getParams["offset"] = paidPosts.list.Count.ToString();
@@ -1271,7 +1273,7 @@ public class APIHelper : IAPIHelper
                     Purchased newPaidPosts = new();
 
                     var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                    newPaidPosts = JsonConvert.DeserializeObject<Purchased>(loopbody, m_JsonSerializerSettings);
+                    newPaidPosts = JsonSerializer.Deserialize<Purchased>(loopbody, m_JsonSerializerSettings);
 
                     paidPosts.list.AddRange(newPaidPosts.list);
                     if (!newPaidPosts.hasMore)
@@ -1418,7 +1420,7 @@ public class APIHelper : IAPIHelper
                 config.CustomDate);
 
             var body = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, new HttpClient());
-            posts = JsonConvert.DeserializeObject<Post>(body, m_JsonSerializerSettings);
+            posts = JsonSerializer.Deserialize<Post>(body, m_JsonSerializerSettings);
             if (posts != null && posts.hasMore)
             {
 
@@ -1432,7 +1434,7 @@ public class APIHelper : IAPIHelper
                     Post newposts = new();
                     
                     var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                    newposts = JsonConvert.DeserializeObject<Post>(loopbody, m_JsonSerializerSettings);
+                    newposts = JsonSerializer.Deserialize<Post>(loopbody, m_JsonSerializerSettings);
 
                     posts.list.AddRange(newposts.list);
                     if (!newposts.hasMore)
@@ -1558,7 +1560,7 @@ public class APIHelper : IAPIHelper
                 config.CustomDate);
 
             var body = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-            archived = JsonConvert.DeserializeObject<Archived>(body, m_JsonSerializerSettings);
+            archived = JsonSerializer.Deserialize<Archived>(body, m_JsonSerializerSettings);
             if (archived != null && archived.hasMore)
             {
                 UpdateGetParamsForDateSelection(
@@ -1570,7 +1572,7 @@ public class APIHelper : IAPIHelper
                     Archived newarchived = new();
 
                     var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                    newarchived = JsonConvert.DeserializeObject<Archived>(loopbody, m_JsonSerializerSettings);
+                    newarchived = JsonSerializer.Deserialize<Archived>(loopbody, m_JsonSerializerSettings);
 
                     archived.list.AddRange(newarchived.list);
                     if (!newarchived.hasMore)
@@ -1674,7 +1676,7 @@ public class APIHelper : IAPIHelper
             };
 
             var body = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-            messages = JsonConvert.DeserializeObject<Messages>(body, m_JsonSerializerSettings);
+            messages = JsonSerializer.Deserialize<Messages>(body, m_JsonSerializerSettings);
             if (messages.hasMore)
             {
                 getParams["id"] = messages.list[^1].id.ToString();
@@ -1683,7 +1685,7 @@ public class APIHelper : IAPIHelper
                     Messages newmessages = new();
 
                     var loopbody = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-                    newmessages = JsonConvert.DeserializeObject<Messages>(loopbody, m_JsonSerializerSettings);
+                    newmessages = JsonSerializer.Deserialize<Messages>(loopbody, m_JsonSerializerSettings);
 
                     messages.list.AddRange(newmessages.list);
                     if (!newmessages.hasMore)
@@ -1859,7 +1861,7 @@ public class APIHelper : IAPIHelper
             };
 
             var body = await BuildHeaderAndExecuteRequests(getParams, endpoint, auth, GetHttpClient(config));
-            paidMessages = JsonConvert.DeserializeObject<Purchased>(body, m_JsonSerializerSettings);
+            paidMessages = JsonSerializer.Deserialize<Purchased>(body, m_JsonSerializerSettings);
             if (paidMessages != null && paidMessages.hasMore)
             {
                 getParams["offset"] = paidMessages.list.Count.ToString();
@@ -1880,7 +1882,7 @@ public class APIHelper : IAPIHelper
                     {
                         loopresponse.EnsureSuccessStatusCode();
                         var loopbody = await loopresponse.Content.ReadAsStringAsync();
-                        newpaidMessages = JsonConvert.DeserializeObject<Purchased>(loopbody, m_JsonSerializerSettings);
+                        newpaidMessages = JsonSerializer.Deserialize<Purchased>(loopbody, m_JsonSerializerSettings);
                     }
                     paidMessages.list.AddRange(newpaidMessages.list);
                     if (!newpaidMessages.hasMore)
